@@ -51,7 +51,7 @@ extension HealthKitManager {
     }
     
     private func fetchLatestHeartRate() async throws {
-        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else { 
+        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else {
             throw HealthKitError.invalidDataType("Heart rate type not available")
         }
         
@@ -87,16 +87,12 @@ extension HealthKitManager {
                 }
                 
                 Task {
-                    do {
-                        await self?.sendHealthData(
-                            type: "heart_rate",
-                            value: heartRateValue,
-                            unit: "count/min",
-                            timestamp: sample.endDate
-                        )
-                    } catch {
-                        print("❌ Failed to send heart rate data: \(error)")
-                    }
+                    await self?.sendHealthData(
+                        type: "heart_rate",
+                        value: heartRateValue,
+                        unit: "count/min",
+                        timestamp: sample.endDate
+                    )
                 }
                 
                 continuation.resume()
@@ -153,7 +149,7 @@ extension HealthKitManager {
     }
     
     private func fetchLatestStepCount() async throws {
-        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else { 
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
             throw HealthKitError.invalidDataType("Step count type not available")
         }
         
@@ -255,7 +251,7 @@ extension HealthKitManager {
     }
     
     private func fetchLatestDistance() async throws {
-        guard let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning) else { 
+        guard let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning) else {
             throw HealthKitError.invalidDataType("Distance type not available")
         }
         

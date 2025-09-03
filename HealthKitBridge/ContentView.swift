@@ -14,6 +14,12 @@ struct ContentView: View {
     @StateObject private var healthManager = HealthKitManager.shared
     @StateObject private var apiClient = ApiClient.shared
     
+    // New optimization managers
+    @StateObject private var batteryManager = BatteryOptimizationManager.shared
+    @StateObject private var analytics = HealthAnalyticsEngine.shared
+    @StateObject private var notifications = SmartNotificationManager.shared
+    @StateObject private var fallRiskEngine = FallRiskAnalysisEngine.shared
+    
     @State private var isInitialized = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -24,30 +30,53 @@ struct ContentView: View {
     @State private var testDataSendStatus: String = "" // New state for test data feedback
     @State private var refreshDataStatus: String = "" // New state for refresh data feedback
     @State private var forceRefresh = false // Force UI refresh trigger
+    @State private var showingAnalytics = false
+    @State private var showingBatteryInfo = false
+    @State private var showingFallRiskDashboard = false
+    
+    // New iOS 16 HIG states
+    @State private var selectedMetric: String? = nil
+    @State private var scrollOffset: CGFloat = 0
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Header with live stats
-                    headerSection
-                    
-                    // Connection Status Card (Enhanced)
-                    connectionStatusCard
-                    
-                    // Health Data Summary Card (New)
-                    healthDataSummaryCard
-                    
-                    // Performance Stats Card (New)
-                    performanceStatsCard
-                    
-                    // Manual Controls
-                    controlButtonsSection
-                    
-                    // Debug Information (Expandable)
-                    debugSection
+        NavigationStack {
+            GeometryReader { geometry in
+                ScrollView {
+                    LazyVStack(spacing: 24) {
+                        // Hero Header with Status
+                        heroHeaderSection
+                        
+                        // Quick Actions Card (Primary CTA)
+                        quickActionsCard
+                        
+                        // Health Metrics Grid
+                        healthMetricsGrid
+                        
+                        // Expandable Insights Cards
+                        insightsSection
+                        
+                        // System Status Cards
+                        systemStatusSection
+                        
+                        // Advanced Controls (Collapsed by default)
+                        advancedControlsSection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 100) // Bottom safe area
                 }
-                .padding()
+                .scrollIndicators(.hidden)
+                .background {
+                    // Dynamic background with subtle gradient
+                    LinearGradient(
+                        colors: [
+                            Color(.systemBackground),
+                            Color(.systemGroupedBackground)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
+                }
             }
             .navigationBarHidden(true)
             .onAppear {
@@ -61,354 +90,489 @@ struct ContentView: View {
                 Text(alertMessage)
             }
         }
-        .id(forceRefresh) // Force refresh when needed
+        .id(forceRefresh)
     }
     
-    private var headerSection: some View {
-        VStack {
-            Text("HealthKit Bridge")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            if healthManager.isMonitoringActive {
-                Text("📊 \(String(format: "%.1f", healthManager.dataPointsPerMinute)) data points/min")
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                    .animation(.easeInOut, value: healthManager.dataPointsPerMinute)
-            }
-        }
-    }
-    
-    private var connectionStatusCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+    // MARK: - Hero Header Section
+    private var heroHeaderSection: some View {
+        VStack(spacing: 16) {
+            // App Title with Status Indicator
             HStack {
-                Circle()
-                    .fill(webSocketManager.isConnected ? Color.green : Color.red)
-                    .frame(width: 12, height: 12)
-                    .animation(.easeInOut, value: webSocketManager.isConnected)
-                
-                Text("WebSocket Status")
-                    .font(.headline)
-                
-                Spacer()
-                
-                if healthManager.connectionQuality.latency > 0 {
-                    Text("\(Int(healthManager.connectionQuality.latency * 1000))ms")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Text(webSocketManager.connectionStatus)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            if let error = webSocketManager.lastError {
-                Text("Error: \(error)")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.top, 5)
-            }
-            
-            // Connection quality indicator
-            if webSocketManager.isConnected {
-                HStack {
-                    Text("Quality:")
-                        .font(.caption)
-                    ProgressView(value: healthManager.connectionQuality.signalStrength)
-                        .progressViewStyle(LinearProgressViewStyle(tint: qualityColor))
-                        .frame(height: 4)
-                    Text(qualityDescription)
-                        .font(.caption)
-                        .foregroundColor(qualityColor)
-                }
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
-    }
-    
-    private var healthDataSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Health Data")
-                    .font(.headline)
-                
-                Spacer()
-                
-                if healthManager.isMonitoringActive {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 8, height: 8)
-                        .opacity(0.8)
-                }
-            }
-            
-            let summary = healthManager.getHealthDataSummary()
-            if !summary.isEmpty {
-                Text(summary)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-            } else {
-                Text("No health data available")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Individual health metrics
-            if let heartRate = healthManager.lastHeartRate {
-                healthMetricRow(icon: "heart.fill", title: "Heart Rate", value: "\(Int(heartRate)) BPM", color: .red)
-            }
-            
-            if let steps = healthManager.lastStepCount {
-                healthMetricRow(icon: "figure.walk", title: "Steps", value: "\(Int(steps))", color: .blue)
-            }
-            
-            if let energy = healthManager.lastActiveEnergy {
-                healthMetricRow(icon: "flame.fill", title: "Active Energy", value: "\(Int(energy)) kcal", color: .orange)
-            }
-            
-            if let distance = healthManager.lastDistance {
-                healthMetricRow(icon: "location.fill", title: "Distance", value: String(format: "%.1f km", distance/1000), color: .green)
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
-    }
-    
-    private var performanceStatsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Performance")
-                .font(.headline)
-            
-            HStack {
-                statItem(title: "Total Sent", value: "\(healthManager.totalDataPointsSent)")
-                Spacer()
-                statItem(title: "Rate", value: String(format: "%.1f/min", healthManager.dataPointsPerMinute))
-                Spacer()
-                statItem(title: "Reconnects", value: "\(healthManager.connectionQuality.reconnectCount)")
-            }
-            
-            if !healthManager.healthDataFreshness.isEmpty {
-                Text("Last Updates:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                ForEach(Array(healthManager.healthDataFreshness.keys.sorted()), id: \.self) { key in
-                    if let date = healthManager.healthDataFreshness[key] {
-                        HStack {
-                            Text(key.capitalized)
-                                .font(.caption2)
-                            Spacer()
-                            Text(timeAgo(from: date))
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("HealthKit Bridge")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.primary)
+                    
+                    if !analytics.getInsightMessage().isEmpty {
+                        Text(analytics.getInsightMessage())
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
                 }
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
-    }
-    
-    private var controlButtonsSection: some View {
-        VStack(spacing: 15) {
-            // Step 1: Connect to WebSocket first
-            Button("Connect WebSocket") {
-                Task {
-                    await connectWebSocket()
+                
+                Spacer()
+                
+                // Status Indicator
+                VStack(spacing: 8) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 12, height: 12)
+                        .overlay {
+                            Circle()
+                                .fill(statusColor)
+                                .scaleEffect(healthManager.isMonitoringActive ? 1.5 : 1.0)
+                                .opacity(healthManager.isMonitoringActive ? 0.3 : 0.0)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: healthManager.isMonitoringActive)
+                        }
+                    
+                    Text(overallStatus)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
                 }
             }
-            .disabled(webSocketManager.isConnected)
-            .buttonStyle(.borderedProminent)
             
-            // Step 2: Start/Stop Health Monitoring (most important action)
+            // Real-time Data Rate (when active)
+            if healthManager.isMonitoringActive {
+                HStack(spacing: 16) {
+                    dataRateIndicator
+                    
+                    if batteryManager.shouldReduceMonitoring() {
+                        batterySavingIndicator
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+            }
+        }
+        .padding(.top, 20)
+    }
+    
+    // MARK: - Quick Actions Card
+    private var quickActionsCard: some View {
+        VStack(spacing: 16) {
+            // Primary Action Button
             Button(action: {
                 Task {
                     if healthManager.isMonitoringActive {
                         await stopHealthMonitoring()
                     } else {
+                        if !webSocketManager.isConnected {
+                            await connectWebSocket()
+                        }
                         await startHealthMonitoring()
                     }
                 }
             }) {
-                Text(healthManager.isMonitoringActive ? "Stop Monitoring" : "Start Health Monitoring")
-                    .foregroundColor(.white) // Force white text for visibility
-                    .frame(maxWidth: .infinity)
-            }
-            .disabled(!webSocketManager.isConnected)
-            .buttonStyle(.borderedProminent)
-            .tint(healthManager.isMonitoringActive ? .red : .blue) // Use tint instead of foregroundColor
-            .animation(.easeInOut(duration: 0.2), value: healthManager.isMonitoringActive)
-            .onAppear {
-                print("🔘 Monitoring button appeared - isMonitoringActive: \(healthManager.isMonitoringActive)")
-            }
-            .onChange(of: healthManager.isMonitoringActive) { oldValue, newValue in
-                print("🔘 isMonitoringActive changed from \(oldValue) to \(newValue)")
-            }
-            
-            // Step 3: Manual actions section
-            VStack(spacing: 8) {
-                Text("Manual Actions")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                HStack(spacing: 15) {
-                    Button("Send Test Data") {
-                        Task {
-                            await sendTestData()
-                        }
-                    }
-                    .disabled(!webSocketManager.isConnected)
-                    .buttonStyle(.bordered)
-                    
-                    Button("Refresh Health Data") {
-                        Task {
-                            await refreshHealthData()
-                        }
-                    }
-                    .disabled(!webSocketManager.isConnected) // Change condition to only require WebSocket connection
-                    .buttonStyle(.bordered)
-                }
-                
-                // Visual feedback for test data sending
-                if !testDataSendStatus.isEmpty {
-                    HStack {
-                        if testDataSendStatus.contains("successfully") {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                        } else if testDataSendStatus.contains("Failed") {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
-                        } else {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        }
-                        
-                        Text(testDataSendStatus)
-                            .font(.caption)
-                            .foregroundColor(testDataSendStatus.contains("successfully") ? .green : 
-                                           testDataSendStatus.contains("Failed") ? .red : .blue)
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 4)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                    .transition(.opacity.combined(with: .scale))
-                }
-                
-                // Visual feedback for refresh status
-                if !refreshDataStatus.isEmpty {
-                    HStack {
-                        if refreshDataStatus.contains("successfully") {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                        } else if refreshDataStatus.contains("Failed") {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
-                        } else {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        }
-                        
-                        Text(refreshDataStatus)
-                            .font(.caption)
-                            .foregroundColor(refreshDataStatus.contains("successfully") ? .green : 
-                                             refreshDataStatus.contains("Failed") ? .red : .blue)
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 4)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                    .transition(.opacity.combined(with: .scale))
-                }
-            }
-        }
-    }
-    
-    private var debugSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: {
-                print("🐛 Debug section tapped - current state: \(showingDebugInfo)")
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showingDebugInfo.toggle()
-                }
-                print("🐛 Debug section new state: \(showingDebugInfo)")
-            }) {
                 HStack {
-                    Text("Debug Information")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
+                    Image(systemName: healthManager.isMonitoringActive ? "stop.circle.fill" : "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                    
+                    Text(healthManager.isMonitoringActive ? "Stop Monitoring" : "Start Health Monitoring")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                    
                     Spacer()
-                    Image(systemName: showingDebugInfo ? "chevron.down" : "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .rotationEffect(.degrees(showingDebugInfo ? 0 : -90))
-                        .animation(.easeInOut(duration: 0.3), value: showingDebugInfo)
+                    
+                    if healthManager.isMonitoringActive {
+                        Text(String(format: "%.1f/min", healthManager.dataPointsPerMinute))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
                 }
-                .padding()
-                .background(Color(.systemGray6))
-                .contentShape(Rectangle())
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+                .background {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(healthManager.isMonitoringActive ? 
+                              LinearGradient(colors: [.red, .red.opacity(0.8)], startPoint: .leading, endPoint: .trailing) :
+                              LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .leading, endPoint: .trailing))
+                }
             }
-            .buttonStyle(PlainButtonStyle())
-            .background(Color(.systemGray6))
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(!webSocketManager.isConnected && !healthManager.isMonitoringActive)
             
-            if showingDebugInfo {
-                VStack(alignment: .leading, spacing: 8) {
-                    debugRow(label: "User ID", value: AppConfig.shared.userId)
-                    debugRow(label: "Device ID", value: UIDevice.current.identifierForVendor?.uuidString ?? "Unknown")
-                    debugRow(label: "API Base URL", value: AppConfig.shared.apiBaseURL)
-                    debugRow(label: "WebSocket URL", value: AppConfig.shared.webSocketURL)
-                    debugRow(label: "HealthKit Status", value: healthManager.isAuthorized ? "Authorized" : "Not Authorized")
-                    debugRow(label: "Monitoring", value: healthManager.isMonitoringActive ? "Active" : "Inactive")
-                    debugRow(label: "WebSocket Mode", value: webSocketManager.isConnected ? "Connected" : "Disconnected")
-                    
-                    if let error = healthManager.lastError {
-                        debugRow(label: "Last Error", value: error)
-                    }
-                    
-                    if let wsError = webSocketManager.lastError {
-                        debugRow(label: "WebSocket Error", value: wsError)
-                    }
-                }
-                .padding()
-                .background(Color(.systemGray5))
-                .transition(.opacity.combined(with: .slide))
+            // Secondary Actions
+            HStack(spacing: 12) {
+                secondaryActionButton(
+                    title: "Connect",
+                    icon: "wifi.circle",
+                    isEnabled: !webSocketManager.isConnected,
+                    action: { Task { await connectWebSocket() } }
+                )
+                
+                secondaryActionButton(
+                    title: "Test Data",
+                    icon: "heart.circle",
+                    isEnabled: webSocketManager.isConnected,
+                    action: { Task { await sendTestData() } }
+                )
+                
+                secondaryActionButton(
+                    title: "Refresh",
+                    icon: "arrow.clockwise.circle",
+                    isEnabled: webSocketManager.isConnected,
+                    action: { Task { await refreshHealthData() } }
+                )
             }
         }
-        .cornerRadius(10)
-        .clipped()
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
     
-    // Helper Views
-    private func healthMetricRow(icon: String, title: String, value: String, color: Color) -> some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .frame(width: 20)
+    // MARK: - Health Metrics Grid
+    private var healthMetricsGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+            // Heart Rate Metric
+            if let heartRate = healthManager.lastHeartRate {
+                MetricCard(
+                    title: "Heart Rate",
+                    value: "\(Int(heartRate))",
+                    unit: "BPM",
+                    icon: "heart.fill",
+                    color: .red,
+                    isSelected: selectedMetric == "heart_rate"
+                ) {
+                    selectedMetric = selectedMetric == "heart_rate" ? nil : "heart_rate"
+                }
+            }
             
-            Text(title)
+            // Steps Metric
+            if let steps = healthManager.lastStepCount {
+                MetricCard(
+                    title: "Steps",
+                    value: "\(Int(steps))",
+                    unit: "steps",
+                    icon: "figure.walk",
+                    color: .blue,
+                    isSelected: selectedMetric == "steps"
+                ) {
+                    selectedMetric = selectedMetric == "steps" ? nil : "steps"
+                }
+            }
+            
+            // Energy Metric
+            if let energy = healthManager.lastActiveEnergy {
+                MetricCard(
+                    title: "Active Energy",
+                    value: "\(Int(energy))",
+                    unit: "kcal",
+                    icon: "flame.fill",
+                    color: .orange,
+                    isSelected: selectedMetric == "energy"
+                ) {
+                    selectedMetric = selectedMetric == "energy" ? nil : "energy"
+                }
+            }
+            
+            // Distance Metric
+            if let distance = healthManager.lastDistance {
+                MetricCard(
+                    title: "Distance",
+                    value: String(format: "%.1f", distance/1000),
+                    unit: "km",
+                    icon: "location.fill",
+                    color: .green,
+                    isSelected: selectedMetric == "distance"
+                ) {
+                    selectedMetric = selectedMetric == "distance" ? nil : "distance"
+                }
+            }
+        }
+    }
+    
+    // MARK: - Insights Section
+    private var insightsSection: some View {
+        VStack(spacing: 16) {
+            // Health Analytics Card
+            ModernExpandableCard(
+                title: "Health Analytics",
+                icon: "chart.line.uptrend.xyaxis",
+                subtitle: analytics.dailySummary.map { "Score: \(Int($0.healthScore))/100" } ?? "No data",
+                isExpanded: $showingAnalytics
+            ) {
+                healthAnalyticsContent
+            }
+            
+            // Fall Risk Assessment Card
+            ModernExpandableCard(
+                title: "Fall Risk Assessment",
+                icon: "exclamationmark.triangle",
+                subtitle: fallRiskEngine.latestRiskLevel?.description ?? "No assessment",
+                isExpanded: $showingFallRiskDashboard
+            ) {
+                fallRiskContent
+            }
+            
+            // Battery Optimization Card
+            ModernExpandableCard(
+                title: "Battery Optimization",
+                icon: "battery.100",
+                subtitle: batteryManager.getBatteryStatusSummary(),
+                isExpanded: $showingBatteryInfo
+            ) {
+                batteryOptimizationContent
+            }
+        }
+    }
+    
+    // MARK: - System Status Section
+    private var systemStatusSection: some View {
+        VStack(spacing: 16) {
+            // Connection Status
+            SystemStatusCard(
+                title: "Connection Status",
+                status: webSocketManager.connectionStatus,
+                isConnected: webSocketManager.isConnected,
+                latency: healthManager.connectionQuality.latency,
+                error: webSocketManager.lastError
+            )
+            
+            // Performance Stats
+            PerformanceStatsCard(
+                totalSent: healthManager.totalDataPointsSent,
+                dataRate: healthManager.dataPointsPerMinute,
+                reconnects: healthManager.connectionQuality.reconnectCount,
+                freshness: healthManager.healthDataFreshness
+            )
+        }
+    }
+    
+    // MARK: - Advanced Controls
+    private var advancedControlsSection: some View {
+        ModernExpandableCard(
+            title: "Debug Information",
+            icon: "terminal",
+            subtitle: "System details",
+            isExpanded: $showingDebugInfo
+        ) {
+            debugContent
+        }
+    }
+    
+    // MARK: - Helper Views
+    
+    private var dataRateIndicator: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "chart.bar.fill")
                 .font(.caption)
+                .foregroundStyle(.blue)
+            Text("\(String(format: "%.1f", healthManager.dataPointsPerMinute)) data/min")
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.primary)
+        }
+    }
+    
+    private var batterySavingIndicator: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "battery.25")
+                .font(.caption)
+                .foregroundStyle(.orange)
+            Text("Power Saving")
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.orange)
+        }
+    }
+    
+    private func secondaryActionButton(title: String, icon: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.title3)
+                Text(title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            .foregroundStyle(isEnabled ? .blue : .secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(ScaleButtonStyle())
+        .disabled(!isEnabled)
+    }
+    
+    // MARK: - Content Views
+    
+    private var healthAnalyticsContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Trends
+            HStack {
+                trendIndicator(title: "Heart Rate", trend: analytics.heartRateTrend)
+                Spacer()
+                trendIndicator(title: "Steps", trend: analytics.stepsTrend)
+                Spacer()
+                trendIndicator(title: "Energy", trend: analytics.energyTrend)
+            }
+            
+            // Anomalies
+            if !analytics.anomalies.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recent Anomalies")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.red)
+                    
+                    ForEach(Array(analytics.anomalies.prefix(3)), id: \.timestamp) { anomaly in
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                                .font(.caption)
+                            Text("\(anomaly.type): \(Int(anomaly.value))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
+            
+            // Daily summary
+            if let summary = analytics.dailySummary {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Today's Summary")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    
+                    HStack {
+                        summaryItem(title: "Steps", value: "\(summary.totalSteps)")
+                        Spacer()
+                        summaryItem(title: "Avg HR", value: "\(Int(summary.avgHeartRate))")
+                        Spacer()
+                        summaryItem(title: "Distance", value: String(format: "%.1f km", summary.distanceWalked))
+                    }
+                }
+            }
+        }
+    }
+    
+    private var fallRiskContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let factors = fallRiskEngine.latestRiskFactors {
+                Text("Contributing Factors")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.red)
+                
+                ForEach(factors, id: \.self) { factor in
+                    HStack {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(.red)
+                            .font(.caption2)
+                        Text(factor)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            
+            if let lastAssessment = fallRiskEngine.lastAssessmentTime {
+                Text("Last Assessed: \(timeAgo(from: lastAssessment))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+    
+    private var batteryOptimizationContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Sync Interval")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(String(format: "%.0f", batteryManager.optimizedSyncInterval))s")
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            
+            HStack {
+                Text("Power Saving")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(batteryManager.shouldReduceMonitoring() ? "Active" : "Inactive")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(batteryManager.shouldReduceMonitoring() ? .orange : .green)
+            }
+            
+            ProgressView(value: batteryManager.batteryLevel)
+                .progressViewStyle(LinearProgressViewStyle(
+                    tint: batteryManager.batteryLevel > 0.2 ? .green : .red
+                ))
+        }
+    }
+    
+    private var debugContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            debugRow(label: "User ID", value: AppConfig.shared.userId)
+            debugRow(label: "Device ID", value: UIDevice.current.identifierForVendor?.uuidString ?? "Unknown")
+            debugRow(label: "API Base URL", value: AppConfig.shared.apiBaseURL)
+            debugRow(label: "WebSocket URL", value: AppConfig.shared.webSocketURL)
+            debugRow(label: "HealthKit Status", value: healthManager.isAuthorized ? "Authorized" : "Not Authorized")
+            debugRow(label: "Monitoring", value: healthManager.isMonitoringActive ? "Active" : "Inactive")
+            debugRow(label: "WebSocket Mode", value: webSocketManager.isConnected ? "Connected" : "Disconnected")
+            
+            if let error = healthManager.lastError {
+                debugRow(label: "Last Error", value: error)
+            }
+            
+            if let wsError = webSocketManager.lastError {
+                debugRow(label: "WebSocket Error", value: wsError)
+            }
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var statusColor: Color {
+        if healthManager.isMonitoringActive && webSocketManager.isConnected {
+            return .green
+        } else if webSocketManager.isConnected {
+            return .yellow
+        } else {
+            return .red
+        }
+    }
+    
+    private var overallStatus: String {
+        if healthManager.isMonitoringActive && webSocketManager.isConnected {
+            return "Active"
+        } else if webSocketManager.isConnected {
+            return "Ready"
+        } else {
+            return "Offline"
+        }
+    }
+    
+    // MARK: - Helper Functions (keeping existing ones)
+    
+    private func trendIndicator(title: String, trend: HealthAnalyticsEngine.TrendDirection) -> VStack<TupleView<(Text, Text)>> {
+        VStack {
+            Text(trend.rawValue)
+                .font(.caption)
+            Text(title)
+                .font(.caption2)
                 .foregroundColor(.secondary)
-            
-            Spacer()
-            
+        }
+    }
+    
+    private func summaryItem(title: String, value: String) -> VStack<TupleView<(Text, Text)>> {
+        VStack {
             Text(value)
                 .font(.caption)
                 .fontWeight(.medium)
-        }
-    }
-    
-    private func statItem(title: String, value: String) -> some View {
-        VStack {
-            Text(value)
-                .font(.headline)
-                .fontWeight(.bold)
             Text(title)
                 .font(.caption2)
                 .foregroundColor(.secondary)
@@ -430,24 +594,6 @@ struct ContentView: View {
         }
     }
     
-    // Computed Properties
-    private var qualityColor: Color {
-        let strength = healthManager.connectionQuality.signalStrength
-        if strength > 0.8 { return .green }
-        if strength > 0.6 { return .yellow }
-        if strength > 0.4 { return .orange }
-        return .red
-    }
-    
-    private var qualityDescription: String {
-        let strength = healthManager.connectionQuality.signalStrength
-        if strength > 0.8 { return "Excellent" }
-        if strength > 0.6 { return "Good" }
-        if strength > 0.4 { return "Fair" }
-        return "Poor"
-    }
-    
-    // Helper Functions
     private func timeAgo(from date: Date) -> String {
         let interval = Date().timeIntervalSince(date)
         if interval < 60 {
@@ -459,13 +605,11 @@ struct ContentView: View {
         }
     }
     
+    // MARK: - Existing Functions (keeping all functionality)
+    
     private func initializeApp() async {
         print("🚀 Initializing app...")
-        
-        // Request HealthKit authorization first
         await healthManager.requestAuthorization()
-        
-        // Auto-connect WebSocket
         await connectWebSocket()
     }
     
@@ -491,7 +635,7 @@ struct ContentView: View {
         print("📤 Sending test data...")
         await MainActor.run {
             sendStatus = "Sending..."
-            testDataSendStatus = "Sending test data..." // Show immediate feedback
+            testDataSendStatus = "Sending test data..."
         }
         
         let testData = HealthData(
@@ -508,28 +652,25 @@ struct ContentView: View {
             await MainActor.run {
                 sendStatus = "Sent successfully"
                 lastSentData = "Heart Rate: 75 bpm"
-                testDataSendStatus = "✓ Test data sent successfully (Mock mode)" // Show mock mode clearly
+                testDataSendStatus = "✓ Test data sent successfully (Mock mode)"
             }
             
-            // Show success alert for better feedback
             let mode = webSocketManager.connectionStatus.contains("Mock") ? " (Mock mode)" : ""
             showAlert("Test data sent successfully: Heart Rate 75 BPM\(mode)")
             
-            // Clear status after 4 seconds (longer to see the feedback)
             await MainActor.run {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                     self.sendStatus = "Ready"
-                    self.testDataSendStatus = "" // Clear test data status
+                    self.testDataSendStatus = ""
                 }
             }
         } catch {
             await MainActor.run {
                 sendStatus = "Send failed"
-                testDataSendStatus = "✗ Failed to send test data" // Update test data status
+                testDataSendStatus = "✗ Failed to send test data"
             }
             showAlert("Failed to send test data: \(error.localizedDescription)")
             
-            // Clear error status after 4 seconds
             await MainActor.run {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                     self.testDataSendStatus = ""
@@ -561,7 +702,6 @@ struct ContentView: View {
                 refreshDataStatus = "✓ Health data refreshed successfully"
             }
             
-            // Provide detailed feedback about what was refreshed
             let summary = healthManager.getHealthDataSummary()
             let message = summary.isEmpty ? 
                 "Health data refresh completed" : 
@@ -575,7 +715,6 @@ struct ContentView: View {
             showAlert("Failed to refresh health data: \(error.localizedDescription)")
         }
         
-        // Clear refresh status after 4 seconds
         await MainActor.run {
             DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                 self.refreshDataStatus = ""
@@ -594,6 +733,253 @@ struct ContentView: View {
             alertMessage = message
             showingAlert = true
         }
+    }
+}
+
+// MARK: - Modern UI Components
+
+struct MetricCard: View {
+    let title: String
+    let value: String
+    let unit: String
+    let icon: String
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundStyle(color)
+                    
+                    Spacer()
+                    
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.blue)
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(value)
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.primary)
+                    
+                    Text(unit)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            .padding(16)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(.blue, lineWidth: 2)
+                }
+            }
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+struct ModernExpandableCard<Content: View>: View {
+    let title: String
+    let icon: String
+    let subtitle: String
+    @Binding var isExpanded: Bool
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.title3)
+                        .foregroundStyle(.blue)
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                        .animation(.easeInOut(duration: 0.3), value: isExpanded)
+                }
+                .padding(20)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            if isExpanded {
+                content
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+struct SystemStatusCard: View {
+    let title: String
+    let status: String
+    let isConnected: Bool
+    let latency: Double
+    let error: String?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Circle()
+                    .fill(isConnected ? Color.green : Color.red)
+                    .frame(width: 12, height: 12)
+                    .overlay {
+                        Circle()
+                            .fill(isConnected ? Color.green : Color.red)
+                            .scaleEffect(isConnected ? 1.5 : 1.0)
+                            .opacity(isConnected ? 0.3 : 0.0)
+                            .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isConnected)
+                    }
+                
+                Text(title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                if latency > 0 {
+                    Text("\(Int(latency * 1000))ms")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            Text(status)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            
+            if let error = error {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+struct PerformanceStatsCard: View {
+    let totalSent: Int
+    let dataRate: Double
+    let reconnects: Int
+    let freshness: [String: Date]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Performance")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            HStack {
+                statItem(title: "Total Sent", value: "\(totalSent)")
+                Spacer()
+                statItem(title: "Rate", value: String(format: "%.1f/min", dataRate))
+                Spacer()
+                statItem(title: "Reconnects", value: "\(reconnects)")
+            }
+            
+            if !freshness.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Last Updates")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                    
+                    ForEach(Array(freshness.keys.sorted().prefix(3)), id: .self) { key in
+                        if let date = freshness[key] {
+                            HStack {
+                                Text(key.capitalized)
+                                    .font(.caption)
+                                Spacer()
+                                Text(timeAgo(from: date))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+    
+    private func statItem(title: String, value: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+    
+    private func timeAgo(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 {
+            return "\(Int(interval))s ago"
+        } else if interval < 3600 {
+            return "\(Int(interval/60))m ago"
+        } else {
+            return "\(Int(interval/3600))h ago"
+        }
+    }
+}
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
