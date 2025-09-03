@@ -1,5 +1,5 @@
 # Git ignore file optimized for iOS/Swift development
-# HealthKit Bridge specific exclusions
+# VitalSense Monitor specific exclusions
 
 # Xcode
 *.xcworkspace/xcuserdata/
@@ -67,6 +67,22 @@ logs/
 *.o
 *.a
 *.so
+
+# Sensitive files (Medical data security)
+secrets.json
+*.p12
+*.mobileprovision
+.certificates/
+health_data_exports/
+patient_data/
+medical_reports/
+*.csv
+*.xlsx
+test_data/personal/
+
+# Backup files
+*.backup
+*.bak
 *.dylib
 
 # SwiftLint

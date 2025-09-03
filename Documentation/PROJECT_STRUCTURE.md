@@ -1,8 +1,8 @@
-# HealthKit Bridge - Project Structure
+# VitalSense Monitor - Project Structure
 
 ## 📁 Project Organization
 
-This project follows Swift and iOS development best practices with a feature-based architecture that promotes maintainability, testability, and scalability.
+This project follows Swift and iOS development best practices with a feature-based architecture that promotes maintainability, testability, and scalability. VitalSense Monitor is a medical-grade iOS application for fall risk assessment and gait analysis.
 
 ## 🏗️ Directory Structure
 
@@ -10,9 +10,15 @@ This project follows Swift and iOS development best practices with a feature-bas
 HealthKitBridge/
 ├── Documentation/                  # All project documentation
 │   ├── CHANGELOG.md               # Version history and changes
+│   ├── PROJECT_STRUCTURE.md       # This file - project organization guide
 │   ├── WATCH_INTEGRATION_GUIDE.md # Apple Watch setup instructions
-│   ├── copilot-instructions.md    # GitHub Copilot development guidelines
-│   └── PROJECT_STRUCTURE.md       # This file - project organization guide
+│   ├── INTEGRATION_STATUS.md      # Integration status tracking
+│   ├── MIGRATION_GUIDE.md         # Migration instructions
+│   ├── ORGANIZATION_SUMMARY.md    # Project organization summary
+│   ├── REBRANDING_SUMMARY.md      # VitalSense Monitor rebranding details
+│   ├── BUNDLE_ID_UPDATE.md        # Bundle ID update documentation
+│   ├── DOCKER_USAGE.md            # Docker usage guidelines for iOS development
+│   └── copilot-instructions.md    # GitHub Copilot development guidelines
 │
 ├── HealthKitBridge/               # Main iOS application source code
 │   ├── Core/                      # Core foundational components

@@ -1,6 +1,6 @@
-# HealthKit Bridge - Advanced Fall Risk & Gait Analysis
+# VitalSense Monitor - Advanced Fall Risk & Gait Analysis
 
-A comprehensive Swift iOS application that specializes in fall risk assessment, gait analysis, and walking behavior monitoring for medical data collection and analysis.
+A comprehensive Swift iOS application that specializes in fall risk assessment, gait analysis, and walking behavior monitoring for medical data collection and analysis. VitalSense Monitor extends the VitalSense platform to mobile devices, providing real-time health monitoring capabilities.
 
 ## 🎯 Core Features
 

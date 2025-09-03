@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# HealthKit Bridge - Complete Development Environment Setup
+#!/bin/bash
+
+# Enhanced Development Environment Setup for VitalSense Monitor
 # This script sets up and optimizes your entire development workflow
 
 set -e
@@ -16,7 +18,7 @@ NC='\033[0m' # No Color
 
 # Header
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                  HealthKit Bridge Setup                     ║${NC}"
+echo -e "${BLUE}║                  VitalSense Monitor Setup                   ║${NC}"
 echo -e "${BLUE}║              Development Environment Optimizer              ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
@@ -110,9 +112,9 @@ fi
 # 6. Setup Terminal Enhancements
 print_section "ENHANCING TERMINAL"
 if [ -f ~/.zshrc ]; then
-    if ! grep -q "HealthKit Bridge aliases" ~/.zshrc; then
+    if ! grep -q "VitalSense Monitor aliases" ~/.zshrc; then
         echo "" >> ~/.zshrc
-        echo "# HealthKit Bridge aliases and functions" >> ~/.zshrc
+        echo "# VitalSense Monitor aliases and functions" >> ~/.zshrc
         echo "source $(pwd)/.zshrc_additions" >> ~/.zshrc
         print_status "Terminal enhancements added to .zshrc"
     else
@@ -135,7 +137,7 @@ fi
 # 8. Setup Complete
 print_section "SETUP COMPLETE"
 echo ""
-echo -e "${GREEN}🎉 HealthKit Bridge development environment is now optimized!${NC}"
+echo -e "${GREEN}🎉 VitalSense Monitor development environment is now optimized!${NC}"
 echo ""
 echo -e "${CYAN}Quick Start Commands:${NC}"
 echo -e "  ${YELLOW}make help${NC}          - See all available commands"

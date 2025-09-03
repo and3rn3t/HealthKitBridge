@@ -3,7 +3,12 @@
 # HealthKitBridge iOS App Deployment Script
 # This script builds and installs the app to connected iOS devices
 
-echo "🚀 HealthKitBridge Deployment Script"
+#!/bin/bash
+
+# VitalSense Monitor iOS App Deployment Script
+# Automated deployment to connected iOS devices
+
+echo "🚀 VitalSense Monitor Deployment Script"
 echo "======================================"
 
 # Check if any iOS devices are connected
@@ -20,7 +25,7 @@ echo "$DEVICES"
 
 # Build the project
 echo ""
-echo "🔨 Building HealthKitBridge for iOS..."
+echo "🔨 Building VitalSense Monitor for iOS..."
 cd "$(dirname "$0")"
 
 xcodebuild -project HealthKitBridge.xcodeproj \

@@ -2,7 +2,7 @@
 
 ## 🎯 What We Accomplished
 
-Your HealthKit Bridge project has been successfully reorganized to follow Swift and iOS development best practices! Here's what we've achieved:
+Your VitalSense Monitor project has been successfully reorganized to follow Swift and iOS development best practices! Here's what we've achieved:
 
 ## 📁 New Structure Overview
 

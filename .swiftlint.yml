@@ -1,15 +1,15 @@
-# SwiftLint configuration for HealthKit Bridge
+# SwiftLint configuration for VitalSense Monitor
 # This helps maintain consistent code quality and catches potential issues
 
 # Included rules
 included:
-  - HealthKitBridge/
+  - VitalSenseMonitor/
 
 # Excluded paths
 excluded:
   - build/
-  - HealthKitBridgeTests/
-  - HealthKitBridgeUITests/
+  - VitalSenseMonitorTests/
+  - VitalSenseMonitorUITests/
   - Pods/
   - .build/
 

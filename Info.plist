@@ -21,11 +21,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>HealthKitBridge needs access to your health data to monitor and analyze your movement patterns, fall risk indicators, and overall health metrics for comprehensive health tracking and analysis.</string>
+	<string>VitalSense Monitor needs access to your health data to monitor and analyze your movement patterns, fall risk indicators, and overall health metrics for comprehensive health tracking and analysis.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>HealthKitBridge may write health data to help track your wellness activities and measurements.</string>
+	<string>VitalSense Monitor may write health data to help track your wellness activities and measurements.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>HealthKitBridge needs access to motion and fitness activity to analyze gait patterns, walking stability, and fall risk assessment for comprehensive mobility monitoring.</string>
+	<string>VitalSense Monitor needs access to motion and fitness activity to analyze gait patterns, walking stability, and fall risk assessment for comprehensive mobility monitoring.</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.healthkitbridge.healthsync</string>

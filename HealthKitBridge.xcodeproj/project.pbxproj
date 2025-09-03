@@ -413,7 +413,7 @@
                     "@executable_path/Frameworks",
                 );
                 MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.HealthKitBridge;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.vitalsense.monitor;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
                 SWIFT_VERSION = 5.0;
@@ -444,7 +444,7 @@
                     "@executable_path/Frameworks",
                 );
                 MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.HealthKitBridge;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.vitalsense.monitor;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = YES;
                 SWIFT_VERSION = 5.0;
@@ -462,7 +462,7 @@
                 GENERATE_INFOPLIST_FILE = YES;
                 IPHONEOS_DEPLOYMENT_TARGET = 18.5;
                 MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.HealthKitBridgeTests;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.vitalsense.monitor.tests;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = NO;
                 SWIFT_VERSION = 5.0;
@@ -481,7 +481,7 @@
                 GENERATE_INFOPLIST_FILE = YES;
                 IPHONEOS_DEPLOYMENT_TARGET = 18.5;
                 MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.HealthKitBridgeTests;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.vitalsense.monitor.tests;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = NO;
                 SWIFT_VERSION = 5.0;
@@ -498,7 +498,7 @@
                 DEVELOPMENT_TEAM = C8U3P6AJ6L;
                 GENERATE_INFOPLIST_FILE = YES;
                 MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.HealthKitBridgeUITests;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.vitalsense.monitor.uitests;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = NO;
                 SWIFT_VERSION = 5.0;
@@ -515,7 +515,7 @@
                 DEVELOPMENT_TEAM = C8U3P6AJ6L;
                 GENERATE_INFOPLIST_FILE = YES;
                 MARKETING_VERSION = 1.0;
-                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.HealthKitBridgeUITests;
+                PRODUCT_BUNDLE_IDENTIFIER = dev.andernet.vitalsense.monitor.uitests;
                 PRODUCT_NAME = "$(TARGET_NAME)";
                 SWIFT_EMIT_LOC_STRINGS = NO;
                 SWIFT_VERSION = 5.0;

@@ -2,15 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build HealthKit Bridge",
+      "label": "Build VitalSense Monitor",
       "type": "shell",
       "command": "xcodebuild",
       "args": [
         "build",
         "-project",
-        "HealthKitBridge.xcodeproj",
+        "VitalSenseMonitor.xcodeproj",
         "-scheme",
-        "HealthKitBridge",
+        "VitalSenseMonitor",
         "-configuration",
         "Debug"
       ],
@@ -38,7 +38,7 @@
       "label": "Clean Build",
       "type": "shell",
       "command": "xcodebuild",
-      "args": ["clean", "-project", "HealthKitBridge.xcodeproj"],
+      "args": ["clean", "-project", "VitalSenseMonitor.xcodeproj"],
       "group": "build",
       "presentation": {
         "echo": true,
@@ -53,7 +53,7 @@
       "command": "./scripts/build-and-run.sh",
       "args": ["iPhone 15 Pro", "Debug"],
       "group": "build",
-      "dependsOn": "Build HealthKit Bridge",
+      "dependsOn": "Build VitalSense Monitor",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -68,9 +68,9 @@
       "args": [
         "test",
         "-project",
-        "HealthKitBridge.xcodeproj",
+        "VitalSenseMonitor.xcodeproj",
         "-scheme",
-        "HealthKitBridge",
+        "VitalSenseMonitor",
         "-destination",
         "platform=iOS Simulator,name=iPhone 15 Pro"
       ],
