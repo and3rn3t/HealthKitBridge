@@ -327,3 +327,47 @@ enum HealthKitError: Error, LocalizedError {
         }
     }
 }
+
+// MARK: - Gait Analysis Extensions
+extension HKQuantityType {
+    static var gaitAnalysisTypes: Set<HKQuantityType> {
+        let gaitTypes: [HKQuantityTypeIdentifier] = [
+            .walkingSpeed,
+            .walkingStepLength,
+            .walkingAsymmetryPercentage,
+            .walkingDoubleSupportPercentage,
+            .stairAscentSpeed,
+            .stairDescentSpeed,
+            .sixMinuteWalkTestDistance
+        ]
+        
+        return Set(gaitTypes.compactMap { HKQuantityType.quantityType(forIdentifier: $0) })
+    }
+    
+    static var mobilityTypes: Set<HKQuantityType> {
+        let mobilityTypes: [HKQuantityTypeIdentifier] = [
+            .stepCount,
+            .distanceWalkingRunning,
+            .flightsClimbed,
+            .appleMoveTime,
+            .appleStandTime,
+            .appleExerciseTime
+        ]
+        
+        return Set(mobilityTypes.compactMap { HKQuantityType.quantityType(forIdentifier: $0) })
+    }
+}
+
+extension HKUnit {
+    static var gaitAnalysisUnits: [HKQuantityTypeIdentifier: HKUnit] {
+        return [
+            .walkingSpeed: HKUnit.meter().unitDivided(by: .second()),
+            .walkingStepLength: HKUnit.meter(),
+            .walkingAsymmetryPercentage: HKUnit.percent(),
+            .walkingDoubleSupportPercentage: HKUnit.percent(),
+            .stairAscentSpeed: HKUnit.meter().unitDivided(by: .second()),
+            .stairDescentSpeed: HKUnit.meter().unitDivided(by: .second()),
+            .sixMinuteWalkTestDistance: HKUnit.meter()
+        ]
+    }
+}

@@ -20,6 +20,10 @@ struct ContentView: View {
     @StateObject private var notifications = SmartNotificationManager.shared
     @StateObject private var fallRiskEngine = FallRiskAnalysisEngine.shared
     
+    // New gait analysis managers - use environment objects
+    @EnvironmentObject private var fallRiskGaitManager: FallRiskGaitManager
+    @EnvironmentObject private var appleWatchGaitMonitor: AppleWatchGaitMonitor
+    
     @State private var isInitialized = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -464,7 +468,7 @@ struct ContentView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(.red)
                 
-                ForEach(factors, id: \.self) { factor in
+                ForEach(factors.prefix(3), id: \.self) { factor in
                     HStack {
                         Image(systemName: "circle.fill")
                             .foregroundStyle(.red)
@@ -474,6 +478,12 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                
+                if factors.count > 3 {
+                    Text("... and \(factors.count - 3) more")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
             
             if let lastAssessment = fallRiskEngine.lastAssessmentTime {
@@ -481,6 +491,30 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            
+            // Navigation to comprehensive fall risk dashboard
+            NavigationLink(destination: FallRiskGaitDashboardView()) {
+                HStack {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                    
+                    Text("View Detailed Gait Analysis")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.blue)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(PlainButtonStyle())
         }
     }
     
@@ -610,6 +644,13 @@ struct ContentView: View {
     private func initializeApp() async {
         print("🚀 Initializing app...")
         await healthManager.requestAuthorization()
+        
+        // Initialize gait analysis managers
+        Task {
+            await fallRiskGaitManager.requestGaitAuthorization()
+            await fallRiskGaitManager.startBackgroundMonitoring()
+        }
+        
         await connectWebSocket()
     }
     

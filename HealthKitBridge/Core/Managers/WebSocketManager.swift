@@ -259,6 +259,128 @@ class WebSocketManager: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Gait Analysis Data Transmission
+    func sendGaitAnalysis(_ payload: GaitAnalysisPayload) async throws {
+        print("📤 Sending gait analysis data for user: \(payload.userId)")
+        
+        if isMockMode {
+            print("🧪 Mock mode: Simulating gait analysis send successfully")
+            await MainActor.run {
+                self.updateConnectionStatus("Connected (Mock) - Gait data sent ✓")
+            }
+            
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.updateConnectionStatus("Connected (Mock)")
+            }
+            return
+        }
+        
+        guard let task = task else {
+            print("⚠️ No WebSocket connection, using mock mode for gait data")
+            await MainActor.run {
+                self.isMockMode = true
+                self.updateConnectionStatus("Mock mode: Gait data sent ✓")
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.updateConnectionStatus("Connected (Mock)")
+            }
+            return
+        }
+        
+        let message: [String: Any] = [
+            "type": "gait_analysis",
+            "data": try payload.toDictionary()
+        ]
+        
+        do {
+            try await sendJSON(message)
+            await MainActor.run {
+                self.updateConnectionStatus("Connected (Real) - Gait data sent ✓")
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.updateConnectionStatus("Connected (Real)")
+            }
+        } catch {
+            print("❌ Failed to send gait analysis via WebSocket: \(error)")
+            throw error
+        }
+    }
+    
+    func sendRealtimeGaitData(_ payload: RealtimeGaitDataPayload) async throws {
+        print("📤 Sending realtime gait data")
+        
+        if isMockMode {
+            print("🧪 Mock mode: Simulating realtime gait data send")
+            return
+        }
+        
+        guard let task = task else {
+            print("⚠️ No WebSocket connection for realtime gait data")
+            return
+        }
+        
+        let message: [String: Any] = [
+            "type": "realtime_gait",
+            "data": try payload.toDictionary()
+        ]
+        
+        try await sendJSON(message)
+    }
+    
+    func sendFallRiskAssessment(_ payload: FallRiskAssessmentPayload) async throws {
+        print("📤 Sending fall risk assessment for user: \(payload.userId)")
+        
+        if isMockMode {
+            print("🧪 Mock mode: Simulating fall risk assessment send")
+            await MainActor.run {
+                self.updateConnectionStatus("Connected (Mock) - Fall risk sent ✓")
+            }
+            
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.updateConnectionStatus("Connected (Mock)")
+            }
+            return
+        }
+        
+        guard let task = task else {
+            print("⚠️ No WebSocket connection for fall risk assessment")
+            await MainActor.run {
+                self.isMockMode = true
+                self.updateConnectionStatus("Mock mode: Fall risk sent ✓")
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.updateConnectionStatus("Connected (Mock)")
+            }
+            return
+        }
+        
+        let message: [String: Any] = [
+            "type": "fall_risk_assessment",
+            "data": try payload.toDictionary()
+        ]
+        
+        do {
+            try await sendJSON(message)
+            await MainActor.run {
+                self.updateConnectionStatus("Connected (Real) - Fall risk sent ✓")
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.updateConnectionStatus("Connected (Real)")
+            }
+        } catch {
+            print("❌ Failed to send fall risk assessment via WebSocket: \(error)")
+            throw error
+        }
+    }
+
     private func sendJSON(_ object: [String: Any]) async throws {
         do {
             let data = try JSONSerialization.data(withJSONObject: object)
